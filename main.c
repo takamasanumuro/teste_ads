@@ -88,9 +88,9 @@ int16_t readAdc(int i2c_handle, uint8_t multiplexer, uint8_t rate, uint8_t gain,
 {
 	// set configuration for device setup
 	unsigned char config[3];
-	config[0]= REG_CONFIG; 	// opcode
-	config[1]= (multiplexer << 4) | gain << 1 | 0x81;
-	config[2]= rate << 5 | 3;
+	config[0] = REG_CONFIG; 	// opcode
+	config[1] = (multiplexer << 4) | gain << 1 | 0x81;
+	config[2] = rate << 5 | 3;
 
 	if (write(i2c_handle, config, 3) != 3)
 		return -1; //  error writing
@@ -116,7 +116,7 @@ int16_t readAdc(int i2c_handle, uint8_t multiplexer, uint8_t rate, uint8_t gain,
 		if (msgFromAds1115 & 0x80)
 		{
 			// start conversion
-			config[0]=REG_CONV;
+			config[0] = REG_CONV;
 			if (write(i2c_handle, config, 1) != 1)
 				return -4; // Error writing
 
@@ -151,26 +151,23 @@ int main (void)
 
 	ioctl(i2c_handle, I2C_SLAVE, i2c_address);
 
-	for (int r = 0; r < 8; r++)
+	for (int rateIndex = 0; rateIndex < 8; rateIndex++)
 	{
 		// let`s calulate number of scan for 2 sec
-		int nb_scan =  rate[r] * 2;
-		averageValue=0;
+		int numberScans =  rate[rateIndex] * 2;
+		averageValue = 0;
 
-		printf("%d - Scan %4d samples at rate %3d Samples/sec for 2 sec  ...", r, nb_scan, rate[r]);
+		printf("%d - Scan %4d samples at rate %3d Samples/sec for 2 sec  ...", rateIndex, numberScans, rate[rateIndex]);
 		fflush(stdout);
 
-		// Await some time has passed (???)
 		time_t now = time(NULL);
-		while (now == time(NULL));
-		now = time(NULL);
-
 		int16_t conversionResult = 0;
 		int16_t conversionSuccess = 1;
-        int i = 0;
-		for (int i = 0; i < nb_scan; i++)
+        int scanCounter = 0;
+
+		for (scanCounter; scanCounter < numberScans; scanCounter++)
 		{
-			conversionSuccess = readAdc(i2c_handle, AIN0, r, GAIN_1024MV, &conversionResult);
+			conversionSuccess = readAdc(i2c_handle, AIN0, rateIndex, GAIN_1024MV, &conversionResult);
 
 			if (conversionSuccess < 0)
 			{
@@ -182,9 +179,9 @@ int main (void)
 
 		}
 
-		int diff = time(NULL) - now;
+		int elapsedTime = time(NULL) - now;
 
-		printf("---> got  %d Samples/sec with avg value of %.1f\n", i / diff,1.0 * averageValue / i); // *0.0021929906776);
+		printf("---> got  %d Samples/sec with avg value of %.1f\n", scanCounter / elapsedTime, (float)averageValue / scanCounter); // *0.0021929906776);
 
 	}
 	return 0 ;
